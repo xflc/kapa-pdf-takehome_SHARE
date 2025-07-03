@@ -1,14 +1,17 @@
 from pathlib import Path
 
 import streamlit as st
+from openai import OpenAI
 
 from src.agent.rag_agent import RAGAgent
 from src.chunker.markdown_section_chunker import MarkdownSectionChunker
-from src.converter.pymu import PymuConverter
+from src.converter.openai import OpenAiConverter
 from src.loader.pdf_loader import DirectoryPDFLoader
 from src.vector_store.in_memory import InMemoryVectorStore
 
 DATA_DIR = Path(__file__).parent.parent / "data" / "pdfs"
+
+openai_client = OpenAI()
 
 # ────────────────────────────────────────────────────────────────
 # Page config (browser-tab title stays constant)
@@ -23,9 +26,10 @@ if "mode" not in st.session_state:
 if "agent" not in st.session_state:
     st.session_state.agent = RAGAgent(
         loader=DirectoryPDFLoader(DATA_DIR),
-        converter=PymuConverter(),
+        converter=OpenAiConverter(openai_client),
         chunker=MarkdownSectionChunker(),
         store=InMemoryVectorStore(),
+        client=openai_client,
     )
 agent = st.session_state.agent  # shorthand
 
@@ -43,9 +47,10 @@ with st.sidebar:
         if st.button("♻️ Reset index", use_container_width=True):
             st.session_state.agent = RAGAgent(
                 loader=DirectoryPDFLoader(DATA_DIR),
-                converter=PymuConverter(),
+                converter=OpenAiConverter(openai_client),
                 chunker=MarkdownSectionChunker(),
                 store=InMemoryVectorStore(),
+                client=openai_client,
             )
             st.session_state.mode = "Browse"
             st.rerun()

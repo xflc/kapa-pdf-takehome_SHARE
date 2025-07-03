@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import logging
 import os
-from pathlib import Path
 from typing import Dict, List, Tuple
 
 from openai import OpenAI
+from tqdm import tqdm  
 
 from ..chunker.base import BaseChunker
 from ..converter.base import PDFtoMarkdown
@@ -30,6 +30,7 @@ class RAGAgent:
         store: InMemoryVectorStore,
         model: str = DEFAULT_MODEL,
         top_k: int = TOP_K,
+        client: OpenAI = OpenAI(),
     ):
         self.loader = loader
         self.converter = converter
@@ -37,7 +38,7 @@ class RAGAgent:
         self.store = store
         self.model = model
         self.top_k = top_k
-        self.client = OpenAI()
+        self.client = client
 
         self._docs: Dict[str, Document] = {}  # internal storage
 
@@ -57,7 +58,7 @@ class RAGAgent:
         Load PDFs → Markdown → chunks → vector store.
         Re-runs are additive; call `self.store.reset()` outside if needed.
         """
-        for doc in self.loader.load():
+        for doc in tqdm(self.loader.load(), desc="Indexing PDFs"):
             if doc.name in self._docs:  # skip duplicates
                 continue
 
