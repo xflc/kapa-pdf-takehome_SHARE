@@ -1,17 +1,17 @@
 FROM python:3.11-slim
 
+COPY . /workspace
+WORKDIR /workspace
+COPY requirements.txt ./
+
 # Build tools (needed for numpy / FAISS)
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
+        tesseract-ocr \
+        tesseract-ocr-eng \
         && rm -rf /var/lib/apt/lists/* \
-        && apt-get -y install tesseract-ocr 
+        && pip install --no-cache-dir -r requirements.txt
 
-COPY . /workspace
-
-WORKDIR /workspace
-
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source, ui, and sample data
 COPY src ./src
