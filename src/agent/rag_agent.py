@@ -14,7 +14,7 @@ from ..vector_store.in_memory import InMemoryVectorStore
 from .types import Document
 
 DEFAULT_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini-2025-04-14")
-TOP_K = int(os.getenv("TOP_K", "3"))
+TOP_K = int(os.getenv("TOP_K", "5"))
 
 logger = logging.getLogger(__name__)
 

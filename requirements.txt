@@ -11,4 +11,7 @@ pymupdf4llm==0.0.24
 black==25.1.0
 isort==6.0.1
 pytesseract==0.3.13
-marker-pdf==1.8.1
+surya-ocr==0.6.12
+tqdm==4.66.1
+structlog==24.4.0
+backoff==2.2.1

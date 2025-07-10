@@ -13,6 +13,7 @@ import os
 import uuid
 from typing import List, Tuple
 
+import backoff
 import lancedb
 import pandas as pd
 
@@ -35,15 +36,28 @@ class InMemoryVectorStore:
         self._table.create_fts_index("text", replace=True)
         self.texts: List[str] = []
 
-    def add_texts(self, texts: List[str]) -> None:
+    @backoff.on_exception(
+        backoff.expo,
+        Exception,
+        max_tries=5,
+        giveup=lambda e: "Commit conflict" not in str(e) or "concurrent transaction" not in str(e)
+    )
+    def add_texts(self, texts: List[str]):
+        """Add texts to the vector store with retry logic for concurrent transactions."""
+        if self._table is None:
+            raise RuntimeError("Vector store has been reset. Cannot add texts.")
+            
         batch = []
         for t in texts:
             if t:
                 batch.append({"text": t})
 
         if batch:
+            # The vector field will be automatically populated by LanceDB's embedding function
             self._table.add(batch)
             self.texts.extend(texts)
+            return len(batch)
+        return 0
 
     def search(self, query: str, k: int = TOP_K) -> List[Tuple[str, float]]:
         if self._table is None:
@@ -60,7 +74,14 @@ class InMemoryVectorStore:
 
         return [(doc["text"], doc["_relevance_score"]) for doc in df]
 
+    @backoff.on_exception(
+        backoff.expo,
+        Exception,
+        max_tries=5,
+        giveup=lambda e: "Commit conflict" not in str(e) or "concurrent transaction" not in str(e)
+    )
     def reset(self) -> None:
+        """Reset the vector store with retry logic for concurrent transactions."""
         if self._table is not None:
             self._db.drop_table(self._table.name)
         self._table = None
