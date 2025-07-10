@@ -90,15 +90,9 @@ Therefore, I had to make a choice. Do I try these different libraries that promi
 
 I decided to go with the second approach, since I was confident that gpt-4.1-mini would be able to parse these pages correctly if we broke down each page into its main layout blocks (marker just calls surya.layout.LayoutPredictor from an external library). 
 
-# Third Approach
+# Last Approach
 
 
-* **Status column**  
-  * **✓ Works** – the baseline converter already returns the correct information.  
-  * **✗ Needs improvement** – the baseline fails; your converter should fix this.
-* **Correct answer** – wording may differ; the answer simply needs to contain
-  the same factual content.
-* **Page** – PDF page on which the answer can be found.
 
 ### `21098-ESPS2WROOM-scan.pdf`
 
@@ -113,8 +107,8 @@ I decided to go with the second approach, since I was confident that gpt-4.1-min
 | Status | Question | Correct answer (information only) | Page |
 |--------|----------|-----------------------------------|------|
 | ✓ Works | Can **ESP8266EX** be applied to any micro-controller design as a Wi-Fi adaptor? | Yes; via SPI/SDIO or I2C/UART interfaces | 6 |
-| ✗ Needs improvement | What is the **frequency range** for ESP8266EX? | 2.4 G – 2.5 G (2400 M – 2483.5 M) | 7 |
-| ✗ Needs improvement | To what pin do I connect the **resistor** for ESP8266EX? | Pin ERS12K (31) | 15 |
+| ✓ Needs improvement | What is the **frequency range** for ESP8266EX? | 2.4 G – 2.5 G (2400 M – 2483.5 M) | 7 |
+| ✓/✗ Needs improvement | To what pin do I connect the **resistor** for ESP8266EX? | Pin ERS12K (31) | 15 |
 
 ### `esp8266-technical_reference_en.pdf`
 
@@ -122,6 +116,7 @@ I decided to go with the second approach, since I was confident that gpt-4.1-min
 |--------|----------|-----------------------------------|------|
 | ✓ Works | What’s the **flash memory** of EFM8BB31F32G-D-QFP32? | 32 kB | 4 |
 | ✓ Works | What is the **maximum storage temperature** for EFM8BB3? | 150 °C | 40 |
-| ✗ Needs improvement | How many **multi-function I/O pins** does EFM8BB3 have? | Up to 29 | 10 |
-| ✗ Needs improvement | What is the **minimum Voltage Reference Range for DACs**? | 1.15 V | 31 |
-| ✗ Needs improvement | What are the different **power modes** for EFM8BB3? | Normal, Idle, Suspend, Stop, Snooze, Shutdown | 10 |
+| ✓ Needs improvement | How many **multi-function I/O pins** does EFM8BB3 have? | Up to 29 | 10 |
+| ✓ Needs improvement | What is the **minimum Voltage Reference Range for DACs**? | 1.15 V | 31 |
+| ✓ 
+Needs improvement | What are the different **power modes** for EFM8BB3? | Normal, Idle, Suspend, Stop, Snooze, Shutdown | 10 |
