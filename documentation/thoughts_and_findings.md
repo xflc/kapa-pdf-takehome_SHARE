@@ -138,3 +138,74 @@ There are a few things that are not working well:
 - The markdown hierarchy is not working. I need to improve the prompt for the model to know if it is a header or normal text
 - some contents like table of contents are not well formated. Again, we should add that context to the prompt
 - I should add the original text to the prompt to help
+
+
+# Fourth Approach: Improved Prompt
+
+This approach focused on improving the prompts sent to the model for better text extraction and formatting. Key improvements included:
+
+## Prompt Enhancements
+
+### 1. **Block-Type Specialized Prompts (`get_block_prompt` Function)**
+
+The core innovation was implementing specialized prompts for different layout elements detected by Surya. Instead of using a generic "extract text" prompt for all blocks, we created tailored instructions for each block type:
+
+**Logic Behind Specialized Prompts:**
+- **Different Content Types Need Different Handling**: A table requires different formatting than a title or caption
+- **Preserve Document Structure**: Headers should become markdown headings, lists should maintain proper indentation
+- **Optimize for Retrieval**: Well-formatted markdown improves chunking and semantic search quality
+- **Context-Aware Processing**: Each block type has specific formatting requirements and common patterns
+
+**Block Type Categories:**
+- **Structural Elements**: `Title`, `SectionHeader` → Format as markdown headings (`# ## ###`)
+- **Text Content**: `Text`, `Form`, `Handwriting` → Preserve formatting and indentation
+- **Lists**: `ListItem`, `TableOfContents` → Maintain list structure with proper indentation
+- **Data**: `Table` → Convert to markdown table format with proper alignment
+- **Visual Elements**: `Figure`, `Picture` → Extract and describe visual content (no extra legends yet)
+- **Metadata**: `PageHeader`, `PageFooter`, `Caption`, `Footnote` → Handle appropriately (headers can be headings, footers are plain text)
+- **Special Content**: `Formula` → Format in LaTeX when possible
+
+**Original Text Context Integration:**
+- Added original text from the PDF page as reference context to help the model understand the content better
+- Format: `"Here is the original extracted text of the whole page where the attachment came from, probably with wrong formatting, for you to use as a reference:\n\n{original_text_context}\n\n"`
+
+### 2. **Rate Limiting Solution**
+- Implemented exponential backoff using the `backoff` library
+- Added `completions_with_backoff()` function to handle OpenAI rate limits gracefully
+- Configuration: max 60 seconds, max 6 tries with exponential backoff
+
+
+
+
+### `21098-ESPS2WROOM-scan.pdf`
+
+| Status | Question | Correct answer (information only) | Page |
+|--------|----------|-----------------------------------|------|
+| ✓ Needs improvement | What type of equipment is **B20111311**? | Modular Approval, Wi-Fi Device | — |
+| ✓ Needs improvement | When was the certificate for **US0057** issued? | 2020-11-19 | — |
+| ✗ Needs improvement | Who holds the **21098-ESPS2WROOM** certificate? | ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD. | — | (the model wrote 2109B instead of 21098 so it thinks the answer is not there even though it was retreived. this works much better when there is original text to reference)
+
+### `esp8266_hardware_design_guidelines_en.pdf`
+
+| Status | Question | Correct answer (information only) | Page |
+|--------|----------|-----------------------------------|------|
+| ✓ Works | Can **ESP8266EX** be applied to any micro-controller design as a Wi-Fi adaptor? | Yes; via SPI/SDIO or I2C/UART interfaces | 6 |
+| ✓ Needs improvement | What is the **frequency range** for ESP8266EX? | 2.4 G – 2.5 G (2400 M – 2483.5 M) | 7 |
+| ✓ Needs improvement | To what pin do I connect the **resistor** for ESP8266EX? | Pin ERS12K (31) | 15 |
+
+### `esp8266-technical_reference_en.pdf`
+
+| Status | Question | Correct answer (information only) | Page |
+|--------|----------|-----------------------------------|------|
+| ✓ Works | What’s the **flash memory** of EFM8BB31F32G-D-QFP32? | 32 kB | 4 |
+| ✗ Works | What is the **maximum storage temperature** for EFM8BB3? | 150 °C | 40 |
+| ✓ Needs improvement | How many **multi-function I/O pins** does EFM8BB3 have? | Up to 29 | 10 |
+| ✓ Needs improvement | What is the **minimum Voltage Reference Range for DACs**? | 1.15 V | 31 |
+| ✗ Needs improvement | What are the different **power modes** for EFM8BB3? | Normal, Idle, Suspend, Stop, Snooze, Shutdown | 10 | (one of the three chunks was just a caption, so the model couldnt retrieve the right info in top_3. I'm confident it would work if we had more chunks, but we can improve the markdown headers to increase the quality of the chunks by finetuning the prompt)
+
+Possible Next steps:
+- Improve the markdown headers to increase the quality of the chunks by finetuning the prompt by being more opinionated about the hierarchy of each block type 
+- Add captions for complex elements like tables and pictures describing its content
+- call a model after the whole page is aggregated to fix the markdown headers and the hierarchy of the markdown
+- Technical goal: add concurrency to the openai api calls and parallelize with the layout detection to speed up the process
+
