@@ -8,9 +8,9 @@ In this first approach, I saw that 21098-ESPS2WROOM-scan.pdf simply had no infor
 
 | Status | Question | Correct answer (information only) | Page |
 |--------|----------|-----------------------------------|------|
-| ✓ Needs improvement | What type of equipment is **B20111311**? | Modular Approval, Wi-Fi Device | — |
-| ✓ Needs improvement | When was the certificate for **US0057** issued? | 2020-11-19 | — |
-| ✓ Needs improvement | Who holds the **21098-ESPS2WROOM** certificate? | ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD. | — |
+| ✓ Works | What type of equipment is **B20111311**? | Modular Approval, Wi-Fi Device | — |
+| ✓ Works | When was the certificate for **US0057** issued? | 2020-11-19 | — |
+| ✓ Works | Who holds the **21098-ESPS2WROOM** certificate? | ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD. | — |
 
 ### `esp8266_hardware_design_guidelines_en.pdf`
 
@@ -54,17 +54,17 @@ The preliminary results were promising since it got the second and almost the th
 
 | Status | Question | Correct answer (information only) | Page |
 |--------|----------|-----------------------------------|------|
-| ✓ Needs improvement | What type of equipment is **B20111311**? | Modular Approval, Wi-Fi Device | — |
-| ✓ Needs improvement | When was the certificate for **US0057** issued? | 2020-11-19 | — |
-| ✓ Needs improvement | Who holds the **21098-ESPS2WROOM** certificate? | ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD. | — |
+| ✓ Works | What type of equipment is **B20111311**? | Modular Approval, Wi-Fi Device | — |
+| ✓ Works | When was the certificate for **US0057** issued? | 2020-11-19 | — |
+| ✓ Works | Who holds the **21098-ESPS2WROOM** certificate? | ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD. | — |
 
 ### `esp8266_hardware_design_guidelines_en.pdf`
 
 | Status | Question | Correct answer (information only) | Page |
 |--------|----------|-----------------------------------|------|
 | ✓ Works | Can **ESP8266EX** be applied to any micro-controller design as a Wi-Fi adaptor? | Yes; via SPI/SDIO or I2C/UART interfaces | 6 |
-| ✓ Needs improvement | What is the **frequency range** for ESP8266EX? | 2.4 G – 2.5 G (2400 M – 2483.5 M) | 7 |
-| ✗/✓ Needs improvement | To what pin do I connect the **resistor** for ESP8266EX? | Pin ERS12K (the model wrote RES12K, but got the number right) (31) | 15 |
+| ✓ Works | What is the **frequency range** for ESP8266EX? | 2.4 G – 2.5 G (2400 M – 2483.5 M) | 7 |
+| ✗/✓ Works | To what pin do I connect the **resistor** for ESP8266EX? | Pin ERS12K (the model wrote RES12K, but got the number right) (31) | 15 |
 
 ### `esp8266-technical_reference_en.pdf` (didn't run. too large of a file, makes the conversion very slow and breaks openai rate limits)
 
@@ -112,7 +112,7 @@ Building a custom pipeline using Surya layout detection + GPT-4o-mini for text e
 | Status | Question | Correct answer (information only) | Page |
 |--------|----------|-----------------------------------|------|
 | ✗ Needs improvement | What type of equipment is **B20111311**? | Modular Approval, Wi-Fi Device | — |
-| ✓ Needs improvement | When was the certificate for **US0057** issued? | 2020-11-19 | — |
+| ✓ Works | When was the certificate for **US0057** issued? | 2020-11-19 | — |
 | ✗ Needs improvement | Who holds the **21098-ESPS2WROOM** certificate? | ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD. | — |
 
 ### `esp8266_hardware_design_guidelines_en.pdf`
@@ -127,10 +127,10 @@ Building a custom pipeline using Surya layout detection + GPT-4o-mini for text e
 
 | Status | Question | Correct answer (information only) | Page |
 |--------|----------|-----------------------------------|------|
-| ✗ Works | What’s the **flash memory** of EFM8BB31F32G-D-QFP32? | 32 kB | 4 |
-| ✗ Works | What is the **maximum storage temperature** for EFM8BB3? | 150 °C | 40 |
-| ✗/✓ Needs improvement | How many **multi-function I/O pins** does EFM8BB3 have? | Up to 29 | 10 |
-| ✓ Needs improvement | What is the **minimum Voltage Reference Range for DACs**? | 1.15 V | 31 |
+| ✗ Needs improvement | What’s the **flash memory** of EFM8BB31F32G-D-QFP32? | 32 kB | 4 |
+| ✗ Needs improvement | What is the **maximum storage temperature** for EFM8BB3? | 150 °C | 40 |
+| ✗/✓ Works | How many **multi-function I/O pins** does EFM8BB3 have? | Up to 29 | 10 |
+| ✓ Works | What is the **minimum Voltage Reference Range for DACs**? | 1.15 V | 31 |
 | ✗ Needs improvement | What are the different **power modes** for EFM8BB3? | Normal, Idle, Suspend, Stop, Snooze, Shutdown | 10 |
 
 ## Comments
@@ -181,8 +181,8 @@ The core innovation was implementing specialized prompts for different layout el
 
 | Status | Question | Correct answer (information only) | Page |
 |--------|----------|-----------------------------------|------|
-| ✓ Needs improvement | What type of equipment is **B20111311**? | Modular Approval, Wi-Fi Device | — |
-| ✓ Needs improvement | When was the certificate for **US0057** issued? | 2020-11-19 | — |
+| ✓ Works | What type of equipment is **B20111311**? | Modular Approval, Wi-Fi Device | — |
+| ✓ Works | When was the certificate for **US0057** issued? | 2020-11-19 | — |
 | ✗ Needs improvement | Who holds the **21098-ESPS2WROOM** certificate? | ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD. | — | (the model wrote 2109B instead of 21098 so it thinks the answer is not there even though it was retreived. this works much better when there is original text to reference)
 
 ### `esp8266_hardware_design_guidelines_en.pdf`
@@ -190,17 +190,17 @@ The core innovation was implementing specialized prompts for different layout el
 | Status | Question | Correct answer (information only) | Page |
 |--------|----------|-----------------------------------|------|
 | ✓ Works | Can **ESP8266EX** be applied to any micro-controller design as a Wi-Fi adaptor? | Yes; via SPI/SDIO or I2C/UART interfaces | 6 |
-| ✓ Needs improvement | What is the **frequency range** for ESP8266EX? | 2.4 G – 2.5 G (2400 M – 2483.5 M) | 7 |
-| ✓ Needs improvement | To what pin do I connect the **resistor** for ESP8266EX? | Pin ERS12K (31) | 15 |
+| ✓ Works | What is the **frequency range** for ESP8266EX? | 2.4 G – 2.5 G (2400 M – 2483.5 M) | 7 |
+| ✓ Works | To what pin do I connect the **resistor** for ESP8266EX? | Pin ERS12K (31) | 15 |
 
 ### `esp8266-technical_reference_en.pdf`
 
 | Status | Question | Correct answer (information only) | Page |
 |--------|----------|-----------------------------------|------|
 | ✓ Works | What’s the **flash memory** of EFM8BB31F32G-D-QFP32? | 32 kB | 4 |
-| ✗ Works | What is the **maximum storage temperature** for EFM8BB3? | 150 °C | 40 |
-| ✓ Needs improvement | How many **multi-function I/O pins** does EFM8BB3 have? | Up to 29 | 10 |
-| ✓ Needs improvement | What is the **minimum Voltage Reference Range for DACs**? | 1.15 V | 31 |
+| ✗ Needs improvement | What is the **maximum storage temperature** for EFM8BB3? | 150 °C | 40 |
+| ✓ Works | How many **multi-function I/O pins** does EFM8BB3 have? | Up to 29 | 10 |
+| ✓ Works | What is the **minimum Voltage Reference Range for DACs**? | 1.15 V | 31 |
 | ✗ Needs improvement | What are the different **power modes** for EFM8BB3? | Normal, Idle, Suspend, Stop, Snooze, Shutdown | 10 | (one of the three chunks was just a caption, so the model couldnt retrieve the right info in top_3. I'm confident it would work if we had more chunks, but we can improve the markdown headers to increase the quality of the chunks by finetuning the prompt)
 
 Possible Next steps:
@@ -220,17 +220,17 @@ I asked for a detailed legend for tables and pictures since i understood that th
 
 | Status | Question | Correct answer (information only) | Page |
 |--------|----------|-----------------------------------|------|
-| ✓ Needs improvement | What type of equipment is **B20111311**? | Modular Approval, Wi-Fi Device | — |
-| ✓ Needs improvement | When was the certificate for **US0057** issued? | 2020-11-19 | — |
-| ✓ Needs improvement | Who holds the **21098-ESPS2WROOM** certificate? | ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD. | — |
+| ✓ Works | What type of equipment is **B20111311**? | Modular Approval, Wi-Fi Device | — |
+| ✓ Works | When was the certificate for **US0057** issued? | 2020-11-19 | — |
+| ✓ Works | Who holds the **21098-ESPS2WROOM** certificate? | ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD. | — |
 
 ### `esp8266_hardware_design_guidelines_en.pdf`
 
 | Status | Question | Correct answer (information only) | Page |
 |--------|----------|-----------------------------------|------|
 | ✓ Works | Can **ESP8266EX** be applied to any micro-controller design as a Wi-Fi adaptor? | Yes; via SPI/SDIO or I2C/UART interfaces | 6 |
-| ✓ Needs improvement | What is the **frequency range** for ESP8266EX? | 2.4 G – 2.5 G (2400 M – 2483.5 M) | 7 |
-| ✓ Needs improvement | To what pin do I connect the **resistor** for ESP8266EX? | Pin ERS12K (31) | 15 |
+| ✓ Works | What is the **frequency range** for ESP8266EX? | 2.4 G – 2.5 G (2400 M – 2483.5 M) | 7 |
+| ✓ Works | To what pin do I connect the **resistor** for ESP8266EX? | Pin ERS12K (31) | 15 |
 
 ### `esp8266-technical_reference_en.pdf`
 
@@ -238,9 +238,9 @@ I asked for a detailed legend for tables and pictures since i understood that th
 |--------|----------|-----------------------------------|------|
 | ✓ Works | What’s the **flash memory** of EFM8BB31F32G-D-QFP32? | 32 kB | 4 |
 | ✓ Works | What is the **maximum storage temperature** for EFM8BB3? | 150 °C | 40 |
-| ✓ Needs improvement | How many **multi-function I/O pins** does EFM8BB3 have? | Up to 29 | 10 |
-| ✓ Needs improvement | What is the **minimum Voltage Reference Range for DACs**? | 1.15 V | 31 |
-| ✓ Needs improvement | What are the different **power modes** for EFM8BB3? | Normal, Idle, Suspend, Stop, Snooze, Shutdown | 10 |
+| ✓ Works | How many **multi-function I/O pins** does EFM8BB3 have? | Up to 29 | 10 |
+| ✓ Works | What is the **minimum Voltage Reference Range for DACs**? | 1.15 V | 31 |
+| ✓ Works | What are the different **power modes** for EFM8BB3? | Normal, Idle, Suspend, Stop, Snooze, Shutdown | 10 |
 
 
 Every answer is correct. Great news! 
@@ -252,4 +252,4 @@ Possible Next steps:
 - Cal an LLM  after the whole markdown page is aggregated to uniformize the markdown headers their hierarchy
 - Add concurrency to the openai api calls and parallelize with the layout detection to speed up the process
 - Add a Load/Save Index button to the app so that we dont have to wait for the whole process every time we want to test queries
-- Evaluate the quality of the markdown by comparing it with the original pdf. overlap of text, overlap of tables, llm-as-a-judge, etc.
+- Evaluate the quality of the markdown by comparing it with the original pdf. overlap of text, overlap of tables, llm-as-a-judge, etc. Just because these tests are passing does not mean the markdown is good. We have to be careful with overfitting to these tests, so we should create a more robust evaluation pipeline.
