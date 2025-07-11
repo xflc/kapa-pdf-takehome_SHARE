@@ -243,6 +243,9 @@ class MarkdownSectionChunker(BaseChunker):
                     root_title=heading_parent,
                 )
                 result.append(new_chunk)
+        elif len(content) == 0:
+            # If the content under a heading is empty, we skip it. We were having a lot of empty chunks because the keyword was retreiving headers.
+            pass
         else:
             new_chunk = Chunk(
                 content=self._format_section_with_heading(heading, content, None),
