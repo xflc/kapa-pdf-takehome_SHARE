@@ -33,7 +33,7 @@ In this first approach, I saw that 21098-ESPS2WROOM-scan.pdf simply had no infor
 
 
 # Second Approach
-The second approach completely replaced the PymuConverter with a MarkerConverter that uses the marker-pdf library - a more sophisticated PDF-to-markdown conversion tool. There were other options we thought about like docling, mineru and unstructured.io. We decided to go with marker since, given that i couldnt find any decent independent benchmarks comparing these options, it was the simplest and most straightforward to control.
+The second approach completely replaced the PymuConverter with a MarkerConverter that uses the marker-pdf library - a more sophisticated PDF-to-markdown conversion tool. There were other options we thought about like docling, mineru and unstructured.io. We decided to go with marker since, given that i couldnt find any decent independent benchmarks comparing these options, it was the simplest and most straightforward to control locally (i.e. small models locally, openai integration for high quality OCR)
 
 Key Features of MarkerConverter:
 - Advanced PDF Processing: Uses marker-pdf library instead of the simpler PyMuPDF approach
