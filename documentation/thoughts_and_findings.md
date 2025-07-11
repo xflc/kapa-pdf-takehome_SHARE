@@ -73,4 +73,68 @@ After I tried to customize the pipeline for esp8266-technical_reference_en.pdf, 
 
 Therefore, I had to make a choice. Do I try these different libraries that promise to process pdfs well and risk spending a few nights of work trying to get them to work, or after studying the marker library, am I confident that I can manually and rapidly implement a pipeline that works well enough for this specific use case and these questions?
 
-I decided to go with the second approach, since I was confident that gpt-4.1-mini would be able to parse these pages correctly if we broke down each page into its main layout blocks (marker just calls surya.layout.LayoutPredictor from an external library). 
+I decided to go with the second approach, since I was confident that gpt-4.1-mini would be able to parse these pages correctly if we broke down each page into its main layout blocks (marker just calls surya.layout.LayoutPredictor from an external library).
+
+# Third Approach: Custom Surya Pipeline
+
+Building a custom pipeline using Surya layout detection + GPT-4o-mini for text extraction:
+
+1. **PDF → Images**: Convert PDF pages to PIL images using PyMuPDF
+2. **Layout Detection**: Use Surya LayoutPredictor to detect text blocks and layout elements
+3. **Block Extraction**: Crop individual layout blocks from page images
+4. **Text Extraction**: Send block images to GPT-4o-mini for markdown extraction
+5. **Assembly**: Combine extracted text blocks back into complete markdown
+
+**Key Features**:
+- Direct control over the pipeline (no rate limiting issues)
+- Batch processing for layout detection efficiency
+- Pipelined workflow to parallelize layout detection and OpenAI API calls
+- Handles scanned documents through vision models rather than OCR
+
+**Status**: Implementation in progress (`src/converter/basic_surya_pipeline.py`)
+
+## Performance Note: Layout Processing
+
+**CPU Utilization Optimization**: Since we're just using CPU, waiting for layout detection and OpenAI API calls to finish sequentially is clearly inefficient. 
+
+**Quick Test Results** (`test_layout_performance.py` on 21098-ESPS2WROOM-scan.pdf):
+- Batch layout processing: 8.13s (1.32x faster than in sequence)
+- Individual processing: 10.74s 
+- Batch uses more memory (+370MB) but is more efficient overall
+
+**Conclusion**: Use batch processing for layout detection, but pipeline the workflow so OpenAI API calls happen in parallel with layout detection of subsequent chunks. 
+
+## Results
+
+
+### `21098-ESPS2WROOM-scan.pdf`
+
+| Status | Question | Correct answer (information only) | Page |
+|--------|----------|-----------------------------------|------|
+| ✗ Needs improvement | What type of equipment is **B20111311**? | Modular Approval, Wi-Fi Device | — |
+| ✓ Needs improvement | When was the certificate for **US0057** issued? | 2020-11-19 | — |
+| ✗ Needs improvement | Who holds the **21098-ESPS2WROOM** certificate? | ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD. | — |
+
+### `esp8266_hardware_design_guidelines_en.pdf`
+
+| Status | Question | Correct answer (information only) | Page |
+|--------|----------|-----------------------------------|------|
+| ✓ Works | Can **ESP8266EX** be applied to any micro-controller design as a Wi-Fi adaptor? | Yes; via SPI/SDIO or I2C/UART interfaces | 6 |
+| ✗ Needs improvement | What is the **frequency range** for ESP8266EX? | 2.4 G – 2.5 G (2400 M – 2483.5 M) | 7 |
+| ✗ Needs improvement | To what pin do I connect the **resistor** for ESP8266EX? | Pin ERS12K (31) | 15 |
+
+### `esp8266-technical_reference_en.pdf`
+
+| Status | Question | Correct answer (information only) | Page |
+|--------|----------|-----------------------------------|------|
+| ✗ Works | What’s the **flash memory** of EFM8BB31F32G-D-QFP32? | 32 kB | 4 |
+| ✗ Works | What is the **maximum storage temperature** for EFM8BB3? | 150 °C | 40 |
+| ✗/✓ Needs improvement | How many **multi-function I/O pins** does EFM8BB3 have? | Up to 29 | 10 |
+| ✓ Needs improvement | What is the **minimum Voltage Reference Range for DACs**? | 1.15 V | 31 |
+| ✗ Needs improvement | What are the different **power modes** for EFM8BB3? | Normal, Idle, Suspend, Stop, Snooze, Shutdown | 10 |
+
+## Comments
+There are a few things that are not working well:
+- The markdown hierarchy is not working. I need to improve the prompt for the model to know if it is a header or normal text
+- some contents like table of contents are not well formated. Again, we should add that context to the prompt
+- I should add the original text to the prompt to help

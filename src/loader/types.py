@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-
+from pathlib import Path
 
 @dataclass
 class LoadedPDF:
@@ -8,4 +8,5 @@ class LoadedPDF:
     """
 
     name: str
+    path: Path
     raw_bytes: bytes
