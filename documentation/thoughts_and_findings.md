@@ -46,8 +46,9 @@ Key Features of MarkerConverter:
 
 ## Results
 
-The preliminary results were promising since it got the second and almost the third questions of esp8266_hardware_design_guidelines_en.pdf correctly (the model wrote RES12K, but got the pin number right). However, the model broke the openai rate limits when trying to process esp8266-technical_reference_en.pdf.
+The preliminary results were promising since it got the second and almost the third questions of esp8266_hardware_design_guidelines_en.pdf correctly (the model wrote RES12K, but got the pin number right. see Note below*). However, the model broke the openai rate limits when trying to process esp8266-technical_reference_en.pdf.
 
+*NOTE: after encountering this error a few times, I went to the original PDF and saw that the ground truth itself was wrong in the initial `README.md`. The model preded "RES12K" correctly 
 
 ### `21098-ESPS2WROOM-scan.pdf`
 
