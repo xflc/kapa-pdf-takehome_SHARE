@@ -44,6 +44,80 @@ def completions_with_backoff(client, **kwargs):
     return client.chat.completions.create(**kwargs)
 
 
+def get_block_prompt(block_type: str, original_text_context: str) -> str:
+    """
+    Get specialized prompt based on block type with original text context.
+    
+    Args:
+        block_type: The type of block (e.g., "Text", "Title", "Table", etc.)
+        original_text_context: The full page text for reference
+        
+    Returns:
+        Specialized prompt for the block type
+    """
+    prompts = {
+        "Text": f"Extract all text. Maintain original formatting and line breaks.\n\nHere is the original extracted text of the whole page where the attachment came from, probably with wrong formatting, for you to use as a reference:{original_text_context}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown)  and nothing else.",
+        "SectionHeader": f"Extract the heading text. Format as markdown heading (# or ## or ###).\n\nHere is the original extracted text of the whole page where the attachment came from, probably with wrong formatting, for you to use as a reference:{original_text_context}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "Form": f"Extract the form text. Format as markdown form with proper indentation.\n\nHere is the original extracted text of the whole page where the attachment came from, probably with wrong formatting, for you to use as a reference:{original_text_context}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "Title": f"Extract the title text. Format as markdown heading (# or ##).\n\nHere is the original extracted text of the whole page where the attachment came from, probably with wrong formatting, for you to use as a reference:{original_text_context}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "ListItem": f"Extract list items. Format as markdown list with proper indentation.\n\nHere is the original extracted text of the whole page where the attachment came from, probably with wrong formatting, for you to use as a reference:{original_text_context}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "Table": f"Extract the table. Format as markdown table with proper alignment. Include all rows and columns.\n\nHere is the original extracted text of the whole page where the attachment came from, probably with wrong formatting, for you to use as a reference:{original_text_context}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "Figure": f"Describe this figure briefly and extract any visible text or captions.\n\nHere is the original extracted text of the whole page where the attachment came from, probably with wrong formatting, for you to use as a reference:{original_text_context}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "Picture": f"Describe this picture briefly and extract any visible text or captions.\n\nHere is the original extracted text of the whole page where the attachment came from, probably with wrong formatting, for you to use as a reference:{original_text_context}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "Caption": f"Extract the caption text.\n\nHere is the original extracted text of the whole page where the attachment came from, probably with wrong formatting, for you to use as a reference:{original_text_context}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "Footnote": f"Extract the footnote text.\n\nHere is the original extracted text of the whole page where the attachment came from, probably with wrong formatting, for you to use as a reference:{original_text_context}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "Formula": f"Extract the mathematical formula. Format in LaTeX if possible.\n\nHere is the original extracted text of the whole page where the attachment came from, probably with wrong formatting, for you to use as a reference:{original_text_context}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "PageHeader": f"Extract the header text.\n\nHere is the original extracted text of the whole page where the attachment came from, probably with wrong formatting, for you to use as a reference:{original_text_context}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "PageFooter": f"Extract the footer text.\n\nHere is the original extracted text of the whole page where the attachment came from, probably with wrong formatting, for you to use as a reference:{original_text_context}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "Handwriting": f"Extract the handwritting text. Format as markdown with proper indentation.\n\nHere is the original extracted text of the whole page where the attachment came from, probably with wrong formatting, for you to use as a reference:{original_text_context}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "TableOfContents": f"Extract the table of contents. Format as markdown with proper indentation.\n\nHere is the original extracted text of the whole page where the attachment came from, probably with wrong formatting, for you to use as a reference:{original_text_context}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+    }
+    
+    prompt_out = prompts.get(block_type, None)
+    if prompt_out is None:
+        print(f"No prompt found for {block_type}")
+        prompt_out = f"Extract all text.\n\nHere is the original extracted text of the whole page where the attachment came from, probably with wrong formatting, for you to use as a reference:{original_text_context}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else."
+    
+    return prompt_out
+
+
+def extract_full_page_text(client, page_image: Image.Image) -> str:
+    """
+    Extract full page text to use as context for individual blocks.
+    
+    Args:
+        client: OpenAI client
+        page_image: PIL Image of the page
+        
+    Returns:
+        Full page text as context
+    """
+    # Convert PIL image to base64
+    buffered = io.BytesIO()
+    page_image.save(buffered, format="PNG")
+    img_base64 = base64.b64encode(buffered.getvalue()).decode()
+    
+    # Extract full page text with simple prompt
+    response = completions_with_backoff(
+        client,
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant that extracts text from images. Extract all text maintaining basic structure."},
+            {"role": "user", "content": [
+                {"type": "text", "text": "Extract all text from this page:"},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/png;base64,{img_base64}"
+                    }
+                }
+            ]}
+        ]
+    )
+    
+    return response.choices[0].message.content or ""
+
+
 def convert_pdf_basic(pdf_path: Path) -> str:
     """
     Optimized pipeline: PDF → Images → Surya Layout → GPT-4o-mini Text → Markdown
@@ -87,7 +161,8 @@ def convert_pdf_pipelined(pdf_path: Path) -> str:
         pdf_doc = fitz.open(pdf_path)
         with tqdm(total=total_pages, desc="📄 Layout Detection", position=0, leave=True) as layout_pbar:
             for page_num in range(len(pdf_doc)):
-                page = pdf_doc[page_num]
+                page: fitz.Page = pdf_doc[page_num]
+                page_text = page.get_text()
                 # Convert page to image
                 page_image = page.get_pixmap()  # type: ignore
                 img_data = page_image.tobytes("png")
@@ -97,7 +172,7 @@ def convert_pdf_pipelined(pdf_path: Path) -> str:
                 layout_result = layout_predictor([image_pil])[0]
                 
                 # Put result in queue for OpenAI worker
-                layout_queue.put((page_num, layout_result, image_pil))
+                layout_queue.put((page_num, layout_result, image_pil, page_text))
                 
                 # Update progress
                 layout_progress["completed"] += 1
@@ -115,8 +190,8 @@ def convert_pdf_pipelined(pdf_path: Path) -> str:
                 if item is None:  # Completion signal
                     break
                     
-                page_num, layout_result, page_image = item
-                
+                page_num, layout_result, page_image, original_page_text = item
+                                
                 # Process blocks for this page
                 blocks = layout_result.bboxes
                 blocks = sorted(blocks, key=lambda x: x.position)
@@ -145,14 +220,18 @@ def convert_pdf_pipelined(pdf_path: Path) -> str:
                     block_image.save(buffered, format="PNG")
                     img_base64 = base64.b64encode(buffered.getvalue()).decode()
                     
-                    # Send image to gpt-4o-mini
+                    # Get block type and specialized prompt
+                    block_type = block.label
+                    user_prompt = get_block_prompt(block_type, original_page_text)
+                    
+                    # Send image to gpt-4o-mini with specialized prompt
                     response = completions_with_backoff(
                         client,
                         model="gpt-4o-mini",
                         messages=[
                             {"role": "system", "content": "You are a helpful assistant that extracts a markdown representation from images. Use the ```markdown``` tags to wrap the markdown."},
                             {"role": "user", "content": [
-                                {"type": "text", "text": "Extract text from the following image:"},
+                                {"type": "text", "text": user_prompt},
                                 {
                                     "type": "image_url",
                                     "image_url": {
@@ -173,7 +252,7 @@ def convert_pdf_pipelined(pdf_path: Path) -> str:
                 
                 # Nested progress bar for blocks within the page
                 with tqdm(total=len(blocks), desc=f"  📝 Page {page_num + 1} blocks", position=2, leave=False) as block_pbar:
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
                         # Submit all blocks with their indices
                         future_to_block = {
                             executor.submit(process_block, (idx, block)): idx 
