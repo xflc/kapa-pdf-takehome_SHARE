@@ -39,7 +39,6 @@ Key Features of MarkerConverter:
 - Advanced PDF Processing: Uses marker-pdf library instead of the simpler PyMuPDF approach
 - OpenAI LLM Integration: Optional LLM enhancement for improved conversion quality
 - Performance Optimization:
-  - Lazy loading of models (_get_model_dict())
   - Caching of converter instances
   - Efficient temporary file handling
 - Image Extraction: Can extract and handle images from PDFs
