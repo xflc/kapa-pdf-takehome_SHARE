@@ -209,3 +209,47 @@ Possible Next steps:
 - call a model after the whole page is aggregated to fix the markdown headers and the hierarchy of the markdown
 - Technical goal: add concurrency to the openai api calls and parallelize with the layout detection to speed up the process
 
+
+# Fifth Approach: Improved Prompt for Tables and Pictures
+
+I asked for a detailed legend for tables and pictures since i understood that the model was not able to understand the meaning of specific cells even though we were retreiving the right chunk. I asked for a legend explaining the table and a boosted legend explaining the data in every row (but the model rarely follows the latter).
+
+
+//These results were ran in a sliced version of the pdf and needs to be rerun
+### `21098-ESPS2WROOM-scan.pdf`
+
+| Status | Question | Correct answer (information only) | Page |
+|--------|----------|-----------------------------------|------|
+| ✓ Needs improvement | What type of equipment is **B20111311**? | Modular Approval, Wi-Fi Device | — |
+| ✓ Needs improvement | When was the certificate for **US0057** issued? | 2020-11-19 | — |
+| ✓ Needs improvement | Who holds the **21098-ESPS2WROOM** certificate? | ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD. | — |
+
+### `esp8266_hardware_design_guidelines_en.pdf`
+
+| Status | Question | Correct answer (information only) | Page |
+|--------|----------|-----------------------------------|------|
+| ✓ Works | Can **ESP8266EX** be applied to any micro-controller design as a Wi-Fi adaptor? | Yes; via SPI/SDIO or I2C/UART interfaces | 6 |
+| ✓ Needs improvement | What is the **frequency range** for ESP8266EX? | 2.4 G – 2.5 G (2400 M – 2483.5 M) | 7 |
+| ✓ Needs improvement | To what pin do I connect the **resistor** for ESP8266EX? | Pin ERS12K (31) | 15 |
+
+### `esp8266-technical_reference_en.pdf`
+
+| Status | Question | Correct answer (information only) | Page |
+|--------|----------|-----------------------------------|------|
+| ✓ Works | What’s the **flash memory** of EFM8BB31F32G-D-QFP32? | 32 kB | 4 |
+| ✓ Works | What is the **maximum storage temperature** for EFM8BB3? | 150 °C | 40 |
+| ✓ Needs improvement | How many **multi-function I/O pins** does EFM8BB3 have? | Up to 29 | 10 |
+| ✓ Needs improvement | What is the **minimum Voltage Reference Range for DACs**? | 1.15 V | 31 |
+| ✓ Needs improvement | What are the different **power modes** for EFM8BB3? | Normal, Idle, Suspend, Stop, Snooze, Shutdown | 10 |
+
+
+Every answer is correct. Great news! 
+
+We still see some weird chunks. Some with very few text, some with weird markdown headers, etc. 
+
+Possible Next steps:
+- Check linting and formatting of the codebase
+- Cal an LLM  after the whole markdown page is aggregated to uniformize the markdown headers their hierarchy
+- Add concurrency to the openai api calls and parallelize with the layout detection to speed up the process
+- Add a Load/Save Index button to the app so that we dont have to wait for the whole process every time we want to test queries
+- Evaluate the quality of the markdown by comparing it with the original pdf. overlap of text, overlap of tables, llm-as-a-judge, etc.

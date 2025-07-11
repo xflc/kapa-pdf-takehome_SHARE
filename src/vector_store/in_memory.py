@@ -20,7 +20,7 @@ import pandas as pd
 
 from .schema import Document
 
-TOP_K = int(os.getenv("TOP_K", "5"))
+TOP_K = int(os.getenv("TOP_K", "3"))
 logger = logging.getLogger(__name__)
 
 
