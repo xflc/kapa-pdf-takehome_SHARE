@@ -152,7 +152,7 @@ There are a few things that are not working well:
 
 # Fourth Approach: Improved Prompt
 
-This approach focused on improving the prompts sent to the model for better text extraction and formatting. Key improvements included:
+This approach focused on improving the prompts sent to the model for better text extraction and formatting.
 
 ## Prompt Enhancements
 
@@ -164,7 +164,6 @@ The core innovation was implementing specialized prompts for different layout el
 - **Different Content Types Need Different Handling**: A table requires different formatting than a title or caption
 - **Preserve Document Structure**: Headers should become markdown headings, lists should maintain proper indentation
 - **Optimize for Retrieval**: Well-formatted markdown improves chunking and semantic search quality
-- **Context-Aware Processing**: Each block type has specific formatting requirements and common patterns
 
 **Block Type Categories:**
 - **Structural Elements**: `Title`, `SectionHeader` → Format as markdown headings (`# ## ###`)
@@ -172,7 +171,7 @@ The core innovation was implementing specialized prompts for different layout el
 - **Lists**: `ListItem`, `TableOfContents` → Maintain list structure with proper indentation
 - **Data**: `Table` → Convert to markdown table format with proper alignment
 - **Visual Elements**: `Figure`, `Picture` → Extract and describe visual content (no extra legends yet)
-- **Metadata**: `PageHeader`, `PageFooter`, `Caption`, `Footnote` → Handle appropriately (headers can be headings, footers are plain text)
+- **Metadata**: `PageHeader`, `PageFooter`, `Caption`, `Footnote` → Handle appropriately (page headers could be be headings, footers are plain text)
 - **Special Content**: `Formula` → Format in LaTeX when possible
 
 **Original Text Context Integration:**
@@ -255,11 +254,12 @@ I asked for a detailed legend for tables and pictures since i understood that th
 
 Every answer is correct. Great news! 
 
-We still see some weird chunks. Some with very few text, some with weird markdown headers, etc. 
+We still see some non perfect chunks. Some with very few text, some with weird markdown headers, etc. 
 
 Possible Next steps:
 - Check linting and formatting of the codebase
-- Cal an LLM  after the whole markdown page is aggregated to uniformize the markdown headers their hierarchy
-- Add concurrency to the openai api calls and parallelize with the layout detection to speed up the process
-- Add a Load/Save Index button to the app so that we dont have to wait for the whole process every time we want to test queries
+- Call an LLM after the whole markdown page is aggregated to uniformize the markdown headers their hierarchy
+- Put back the code that implemented concurrency to the openai api calls and parallelize with the layout detection to speed up the process
 - Evaluate the quality of the markdown by comparing it with the original pdf. overlap of text, overlap of tables, llm-as-a-judge, etc. Just because these tests are passing does not mean the markdown is good. We have to be careful with overfitting to these tests, so we should create a more robust evaluation pipeline.
+- Add a Load/Save Index button to the app so that we dont have to wait for the whole process every time we want to test queries
+
