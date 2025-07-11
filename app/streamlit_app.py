@@ -93,7 +93,7 @@ if st.session_state.mode == "Chat":
 
         if query:
             answer, chunks = agent.answer(query)
-            
+
             st.chat_message("user").markdown(query)
             st.chat_message("assistant").markdown(answer)
 
