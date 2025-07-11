@@ -147,7 +147,7 @@ In the future, we can reintroduce the optimization for a smoother production exp
 There are a few things that are not working well:
 - The markdown hierarchy is not working. I need to improve the prompt for the model to know if it is a header or normal text
 - some contents like table of contents are not well formated. Again, we should add that context to the prompt
-- I should add the original text to the prompt to help
+- I should add the original text layer (that was embedded in the original pdf) to the prompt to help
 
 
 # Fourth Approach: Improved Prompt
