@@ -103,3 +103,38 @@ Building a custom pipeline using Surya layout detection + GPT-4o-mini for text e
 - Batch uses more memory (+370MB) but is more efficient overall
 
 **Conclusion**: Use batch processing for layout detection, but pipeline the workflow so OpenAI API calls happen in parallel with layout detection of subsequent chunks. 
+
+## Results
+
+
+### `21098-ESPS2WROOM-scan.pdf`
+
+| Status | Question | Correct answer (information only) | Page |
+|--------|----------|-----------------------------------|------|
+| ✗ Needs improvement | What type of equipment is **B20111311**? | Modular Approval, Wi-Fi Device | — |
+| ✓ Needs improvement | When was the certificate for **US0057** issued? | 2020-11-19 | — |
+| ✗ Needs improvement | Who holds the **21098-ESPS2WROOM** certificate? | ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD. | — |
+
+### `esp8266_hardware_design_guidelines_en.pdf`
+
+| Status | Question | Correct answer (information only) | Page |
+|--------|----------|-----------------------------------|------|
+| ✓ Works | Can **ESP8266EX** be applied to any micro-controller design as a Wi-Fi adaptor? | Yes; via SPI/SDIO or I2C/UART interfaces | 6 |
+| ✗ Needs improvement | What is the **frequency range** for ESP8266EX? | 2.4 G – 2.5 G (2400 M – 2483.5 M) | 7 |
+| ✗ Needs improvement | To what pin do I connect the **resistor** for ESP8266EX? | Pin ERS12K (31) | 15 |
+
+### `esp8266-technical_reference_en.pdf`
+
+| Status | Question | Correct answer (information only) | Page |
+|--------|----------|-----------------------------------|------|
+| ✗ Works | What’s the **flash memory** of EFM8BB31F32G-D-QFP32? | 32 kB | 4 |
+| ✗ Works | What is the **maximum storage temperature** for EFM8BB3? | 150 °C | 40 |
+| ✗/✓ Needs improvement | How many **multi-function I/O pins** does EFM8BB3 have? | Up to 29 | 10 |
+| ✓ Needs improvement | What is the **minimum Voltage Reference Range for DACs**? | 1.15 V | 31 |
+| ✗ Needs improvement | What are the different **power modes** for EFM8BB3? | Normal, Idle, Suspend, Stop, Snooze, Shutdown | 10 |
+
+## Comments
+There are a few things that are not working well:
+- The markdown hierarchy is not working. I need to improve the prompt for the model to know if it is a header or normal text
+- some contents like table of contents are not well formated. Again, we should add that context to the prompt
+- I should add the original text to the prompt to help
