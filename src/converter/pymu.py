@@ -1,11 +1,13 @@
+import logging
+
 import pymupdf
 import pymupdf4llm
 
 from ..loader.types import LoadedPDF
 from .base import PDFtoMarkdown
 
-import logging
 logger = logging.getLogger(__name__)
+
 
 class PymuConverter(PDFtoMarkdown):
     def convert(self, doc: LoadedPDF) -> str:
@@ -64,7 +66,7 @@ class PymuConverter(PDFtoMarkdown):
                 if text.strip():
                     markdown_parts.append(self._add_page_header(page_num))
                     markdown_parts.append(text)
-                    
+
         return "\n".join(markdown_parts)
 
     def _clean_ocr_text(self, text: str) -> str:
