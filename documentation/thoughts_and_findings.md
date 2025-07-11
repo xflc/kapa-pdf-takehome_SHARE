@@ -93,6 +93,12 @@ Building a custom pipeline using Surya layout detection + GPT-4o-mini for text e
 
 **Status**: Implementation in progress (`src/converter/basic_surya_pipeline.py`)
 
+**NOTE:**
+Surya Documentation reads the following regarding their license:
+> The weights for the models are licensed cc-by-nc-sa-4.0, but I will waive that for any organization under $2M USD in gross revenue in the most recent 12-month period AND under $2M in lifetime VC/angel funding raised. You also must not be competitive with the Datalab API. If you want to remove the GPL license requirements (dual-license) and/or use the weights commercially over the revenue limit, check out the options here.
+
+If we were not in a technical challenge for a job opening we would have to analyze this and check if this model is appropriate for kapa.ai
+
 ## Performance Note: Layout Processing
 
 **CPU Utilization Optimization**: Since we're just using CPU, waiting for layout detection and OpenAI API calls to finish sequentially is clearly inefficient. 
