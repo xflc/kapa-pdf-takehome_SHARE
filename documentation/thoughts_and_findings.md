@@ -110,9 +110,7 @@ If we were not in a technical challenge for a job opening we would have to analy
 
 **Conclusion**: Use batch processing for layout detection, but pipeline the workflow so OpenAI API calls happen in parallel with layout detection of subsequent chunks. 
 
-Note: These performance optimizations initially made the pipeline faster and improved iteration speed. However, debugging the optimized version proved difficult. As a result, we decided to simplify the process by extracting only the pages containing answers to the test questions—along with their neighboring pages to introduce some noise. This change significantly sped up the overall workflow.
-
-In the future, we can reintroduce the optimization for a smoother production experience. When doing so, we should be mindful of designing the code architecture in a way that supports modular testing—specifically, by isolating key functions from the parallelized code.
+Note: It was too early for these optimizations using concurrency and parallelization. It is important to improve the speed of parsing the text, but until we have a good enough approach it will be easier to debug the main errors of our parser and iterate on solutions if we have a simple pipeline and use a smaller sample of the pdfs (just extracting a small sample of all the pages) instead of over-working on optimizing the performance. In the end we should add this concurrency/parallelization again.
 
 ## Results
 
