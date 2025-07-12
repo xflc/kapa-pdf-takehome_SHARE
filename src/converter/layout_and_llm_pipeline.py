@@ -17,56 +17,17 @@ from surya.layout import LayoutPredictor
 from tqdm import tqdm
 from typing import List, Tuple
 
-from src.utils import extract_markdown_content
+from src.converter.utils import (
+    extract_markdown_content,
+    completions_with_backoff,
+    get_block_prompt,
+    get_user_messages,
+    scale_crop_image,
+    image_to_base64,
+)
 
 from ..loader.types import LoadedPDF
 from .base import PDFtoMarkdown
-
-
-@backoff.on_exception(backoff.expo, openai.RateLimitError, max_time=60, max_tries=6)
-def completions_with_backoff(client, **kwargs):
-    """OpenAI completions with exponential backoff for rate limits"""
-    return client.chat.completions.create(**kwargs)
-
-
-def get_block_prompt(block_type: str, original_text_context: str) -> str:
-    """
-    Get specialized prompt based on block type with original text context.
-    
-    Args:
-        block_type: The type of block (e.g., "Text", "Title", "Table", etc.)
-        original_text_context: The full page text for reference
-        
-    Returns:
-        Specialized prompt for the block type
-    """
-    # Make it empty if original_text_context is empty e.g. an scanned pdf
-    original_text_reference = "" if not original_text_context else f"\n\nHere is the original extracted text of the whole page where the attachment came from, probably with wrong formatting, for you to use as a reference:\n\n{original_text_context}\n\n"
-    
-    prompts = {
-        "Text": f"Extract all text. Maintain original formatting and line breaks.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown)  and nothing else.",
-        "SectionHeader": f"Extract the heading text. Format as markdown heading (# or ## or ###).{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "Form": f"Extract the form text. Format as markdown form with proper formatting and indentation.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "Title": f"Extract the title text. Format as markdown heading (# or ##).{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "ListItem": f"Extract list items. Format as markdown list with proper formatting and indentation.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "Table": f"Extract the table. Format as markdown table with proper alignment. Include all rows and columns.{original_text_reference}\nAfter the table add a detailed a legend composed of two parts: (1) **TABLE_DESCRIPTION**: a description of the columns what the table indicates and (2) **TABLE_DATA**: a verbose Legend with a natural language description of each row of the table (e.g. '''TABLE_DATA:\n- Row1 Id: this ELEMENT_NAME has 100% of the value of COLUMN1 `string x` of COLUMN2\n ...\n- Row2 Id: ...''' or something similar in a ), line by line and incapsulate both legends in the same ```markdown``` block as well.\nJust output the exact content of the image and the legends (Use the ```markdown``` tags to wrap the markdown) and nothing else.  ",
-        "Figure": f"Describe this figure briefly and extract any visible text or captions.{original_text_reference}\n After the figure add a detailed legend with a natural language description of the figure as a legend and incapsulate that in the same ```markdown``` block as well.\nJust output the exact content of the image and the legend (Use the ```markdown``` tags to wrap the markdown) and nothing else. ",
-        "Picture": f"Describe this picture briefly and extract any visible text or captions.{original_text_reference}\n After the picture add a detailed legend with a natural language description of the picture as a legend and incapsulate that in the same ```markdown``` block as well.\nJust output the exact content of the image and the legend (Use the ```markdown``` tags to wrap the markdown) and nothing else. ",
-        "Caption": f"Extract the caption text.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown, but don't use markdown headings like # or ## or ###) and nothing else.",
-        "Footnote": f"Extract the footnote text.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "Formula": f"Extract the mathematical formula. Format in LaTeX if possible.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "PageHeader": f"Extract the page header text with a markdown heading (# or ## or ###) if it contains a chapter/ section header.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "PageFooter": f"Extract the page footer text without any formatting.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "Handwriting": f"Extract the handwritting text. Format as markdown with proper formatting and indentation.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "TableOfContents": f"Extract the table of contents. Format as markdown with proper formatting and indentation.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-    }
-    
-    prompt_out = prompts.get(block_type, None)
-    if prompt_out is None:
-        print(f"No prompt found for {block_type}")
-        prompt_out = f"Extract all text.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else."
-    
-    return prompt_out
 
 
 class LayoutAndLLMConverter(PDFtoMarkdown):
@@ -187,57 +148,14 @@ class LayoutAndLLMConverter(PDFtoMarkdown):
         """
         Extract text from a single block using LLM.
         """
-        block_image = self._scale_crop_image(block, page_image, layout_size)
-        img_base64 = self._image_to_base64(block_image)
+        block_image = scale_crop_image(block, page_image, layout_size)
+        img_base64 = image_to_base64(block_image)
         block_type = block.label
         user_prompt = get_block_prompt(block_type, original_text_context)
         response = completions_with_backoff(
             client=self.client,
             model="GPT-4.1-mini",
-            messages=self.get_user_messages(img_base64, user_prompt)
+            messages=get_user_messages(img_base64, user_prompt)
         )
         block_text = response.choices[0].message.content
         return extract_markdown_content(block_text) if block_text else ""
-
-    def get_user_messages(self, img_base64, user_prompt):
-        return [
-                {
-                    "role": "system", 
-                    "content": "You are a helpful assistant that extracts a markdown representation from images. Use the ```markdown``` tags to wrap the markdown."
-                },
-                {
-                    "role": "user", 
-                    "content": [
-                        {"type": "text", "text": user_prompt},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/png;base64,{img_base64}"
-                            }
-                        }
-                    ]
-                }
-            ]
-
-    def _scale_crop_image(self, block, page_image: Image.Image, layout_size) -> Image.Image:
-        """
-        Prepare block image by scaling and cropping.
-        """
-        page_image_size = page_image.size
-        scale_x = page_image_size[0] / layout_size[0]
-        scale_y = page_image_size[1] / layout_size[1]
-        block_bbox = [
-            block.bbox[0] * scale_x, 
-            block.bbox[1] * scale_y, 
-            block.bbox[2] * scale_x, 
-            block.bbox[3] * scale_y
-        ]
-        return page_image.crop(block_bbox)
-    
-    def _image_to_base64(self, image: Image.Image) -> str:
-        """
-        Convert PIL image to base64 string.
-        """
-        buffered = io.BytesIO()
-        image.save(buffered, format="PNG")
-        return base64.b64encode(buffered.getvalue()).decode()
