@@ -4,9 +4,11 @@ import streamlit as st
 
 from src.agent.rag_agent import RAGAgent
 from src.chunker.markdown_section_chunker import MarkdownSectionChunker
-from src.converter.pymu import PymuConverter
+from src.converter.layout_and_llm_pipeline import LayoutAndLLMConverter
 from src.loader.pdf_loader import DirectoryPDFLoader
 from src.vector_store.in_memory import InMemoryVectorStore
+import torch
+torch.classes.__path__ = [] # add this line to manually set it to empty.
 
 DATA_DIR = Path(__file__).parent.parent / "data" / "pdfs"
 
@@ -23,7 +25,7 @@ if "mode" not in st.session_state:
 if "agent" not in st.session_state:
     st.session_state.agent = RAGAgent(
         loader=DirectoryPDFLoader(DATA_DIR),
-        converter=PymuConverter(),
+        converter=LayoutAndLLMConverter(),
         chunker=MarkdownSectionChunker(),
         store=InMemoryVectorStore(),
     )
@@ -43,7 +45,7 @@ with st.sidebar:
         if st.button("♻️ Reset index", use_container_width=True):
             st.session_state.agent = RAGAgent(
                 loader=DirectoryPDFLoader(DATA_DIR),
-                converter=PymuConverter(),
+                converter=LayoutAndLLMConverter(),
                 chunker=MarkdownSectionChunker(),
                 store=InMemoryVectorStore(),
             )
@@ -93,7 +95,7 @@ if st.session_state.mode == "Chat":
 
         if query:
             answer, chunks = agent.answer(query)
-            
+
             st.chat_message("user").markdown(query)
             st.chat_message("assistant").markdown(answer)
 
