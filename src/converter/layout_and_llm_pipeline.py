@@ -2,7 +2,7 @@
 Pdf2Markdown Pipeline 
 ============================================
 This is the pipeline we are using to convert pdfs to markdown.
-PDF → Images → Surya Layout → GPT-4.1-mini Text → Markdown
+PDF → Images → Surya Layout → gpt-4.1-mini Text → Markdown
 """
 
 import fitz
@@ -24,6 +24,7 @@ from src.converter.utils import (
     get_user_messages,
     scale_crop_image,
     image_to_base64,
+    get_legend_prompt,
 )
 
 from ..loader.types import LoadedPDF
@@ -32,12 +33,14 @@ from .base import PDFtoMarkdown
 
 class LayoutAndLLMConverter(PDFtoMarkdown):
     """
-    Basic converter using Surya layout detection + GPT-4.1-mini text extraction.
+    Basic converter using Surya layout detection + gpt-4.1-mini text extraction.
     """
     
-    def __init__(self):
-        """Initialize the converter with required components."""
+    def __init__(self, max_chars: int = 2000, num_workers: int = 1):
+        """Initialize the converter."""
         self.client = OpenAI()
+        self.max_chars = max_chars
+        self.num_workers = num_workers
     
     def convert(self, doc: LoadedPDF) -> str:
         """
@@ -47,7 +50,7 @@ class LayoutAndLLMConverter(PDFtoMarkdown):
     
     def _pdf_to_markdown_pipeline(self, pdf_path: Path) -> str:
         """
-        Main conversion pipeline: PDF → Images → Surya Layout → GPT-4.1-mini Text → Markdown
+        Main conversion pipeline: PDF → Images → Surya Layout → gpt-4.1-mini Text → Markdown
         
         Args:
             pdf_path: Path to PDF file
@@ -131,18 +134,29 @@ class LayoutAndLLMConverter(PDFtoMarkdown):
         """
         Process a single page with its layout result.
         """
+        from concurrent.futures import ThreadPoolExecutor
+        from tqdm import tqdm
         blocks = sorted(layout_result.bboxes, key=lambda x: x.position)
         layout_size = layout_result.image_bbox[2:4]
-        block_texts = []
-        with tqdm(total=len(blocks), desc=f"Page {page_num + 1} blocks", leave=False) as block_pbar:
-            for block in blocks:
-                block_text = self._lllm_extract_text_from_block(
-                    block, page_image, layout_size, original_text_context
+
+        def process_block(block):
+            if block.label in {"PageFooter", "PageHeader"}:
+                return None
+            return self._lllm_extract_text_from_block(
+                block, page_image, layout_size, original_text_context
+            )
+
+        with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
+            results = list(
+                tqdm(
+                    executor.map(process_block, blocks),
+                    total=len(blocks),
+                    desc=f"Page {page_num + 1} blocks",
+                    leave=False,
                 )
-                if block_text:
-                    block_texts.append(block_text)
-                block_pbar.update(1)
-        return "\n".join(block_texts)
+            )
+        block_texts = [r for r in results if r]
+        return "\n".join([b for b in block_texts if b])
 
     def _lllm_extract_text_from_block(self, block, page_image: Image.Image, layout_size, original_text_context: str) -> str:
         """
@@ -154,8 +168,26 @@ class LayoutAndLLMConverter(PDFtoMarkdown):
         user_prompt = get_block_prompt(block_type, original_text_context)
         response = completions_with_backoff(
             client=self.client,
-            model="GPT-4.1-mini",
+            model="gpt-4.1-mini",
             messages=get_user_messages(img_base64, user_prompt)
         )
         block_text = response.choices[0].message.content
-        return extract_markdown_content(block_text) if block_text else ""
+        main_content = extract_markdown_content(block_text) if block_text else ""
+
+        # For Table, Figure, Picture: generate legend in a second LLM call
+        if block_type in {"Table", "Figure", "Picture"} and main_content:
+            legend_prompt = get_legend_prompt(block_type, main_content)
+            legend_response = completions_with_backoff(
+                client=self.client,
+                model="gpt-4.1-mini",
+                messages=get_user_messages(img_base64, legend_prompt, system_prompt="You are a helpful assistant that generates a legend for a table, figure, or picture.")
+            )
+            legend_text = legend_response.choices[0].message.content
+            legend_content = extract_markdown_content(legend_text) if legend_text else ""
+            # If the combined length exceeds max_chars, return only legend_content
+            if legend_content and len(main_content) + len(legend_content) > self.max_chars:
+                return "\n\n" + legend_content + "\n\n"
+            # Otherwise, append legend to main content, separated by two newlines
+            return f"\n\n{main_content}\n\n{legend_content}\n\n" if legend_content else main_content
+        else:
+            return main_content

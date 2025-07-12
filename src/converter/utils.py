@@ -60,9 +60,9 @@ def get_block_prompt(block_type: str, original_text_context: str) -> str:
         "Form": f"Extract the form text. Format as markdown form with proper formatting and indentation.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
         "Title": f"Extract the title text. Format as markdown heading (# or ##).{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
         "ListItem": f"Extract list items. Format as markdown list with proper formatting and indentation.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "Table": f"Extract the table. Format as markdown table with proper alignment. Include all rows and columns.{original_text_reference}\nAfter the table add a detailed a legend composed of two parts: (1) **TABLE_DESCRIPTION**: a description of the columns what the table indicates and (2) **TABLE_DATA**: a verbose Legend with a natural language description of each row of the table (e.g. '''TABLE_DATA:\n- Row1 Id: this ELEMENT_NAME has 100% of the value of COLUMN1 `string x` of COLUMN2\n ...\n- Row2 Id: ...''' or something similar in a ), line by line and incapsulate both legends in the same ```markdown``` block as well.\nJust output the exact content of the image and the legends (Use the ```markdown``` tags to wrap the markdown) and nothing else.  ",
-        "Figure": f"Describe this figure briefly and extract any visible text or captions.{original_text_reference}\n After the figure add a detailed legend with a natural language description of the figure as a legend and incapsulate that in the same ```markdown``` block as well.\nJust output the exact content of the image and the legend (Use the ```markdown``` tags to wrap the markdown) and nothing else. ",
-        "Picture": f"Describe this picture briefly and extract any visible text or captions.{original_text_reference}\n After the picture add a detailed legend with a natural language description of the picture as a legend and incapsulate that in the same ```markdown``` block as well.\nJust output the exact content of the image and the legend (Use the ```markdown``` tags to wrap the markdown) and nothing else. ",
+        "Table": f"Extract the table. Format as markdown table with proper alignment. Include all rows and columns.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "Figure": f"Describe this figure briefly and extract any visible text or captions.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "Picture": f"Describe this picture briefly and extract any visible text or captions.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
         "Caption": f"Extract the caption text.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown, but don't use markdown headings like # or ## or ###) and nothing else.",
         "Footnote": f"Extract the footnote text.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
         "Formula": f"Extract the mathematical formula. Format in LaTeX if possible.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
@@ -77,11 +77,39 @@ def get_block_prompt(block_type: str, original_text_context: str) -> str:
         prompt_out = f"Extract all text.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else."
     return prompt_out
 
-def get_user_messages(img_base64, user_prompt):
+
+def get_legend_prompt(block_type: str, extracted_content: str) -> str:
+    """
+    Get prompt for generating a legend for Table, Figure, or Picture based on extracted content.
+    """
+    if block_type == "Table":
+        return (
+            "Given the following markdown table, generate a detailed legend composed of the following bullet list: "
+            "TABLE_DATA: a verbose legend in bullet list markdown format with a natural language description of each row of the table."
+            "(e.g. '''TABLE_DATA:\n- Row1_Id_name: ELEMENT_NAME has 60% of the value of COLUMN1 `string x` of COLUMN2\n ...\n- Row2_Id_name: ...'''). "
+            "Encapsulate both legends in a single ```markdown``` block. And dont use markdown headings like # or ## or ###. Just use the bullet list format.\n\n"
+            f"Here is the extracted table:\n\n{extracted_content}\n"
+        )
+    elif block_type == "Figure":
+        return (
+            "Given the following figure description and any visible text or captions, generate a legend "
+            "with a natural language description of the figure. Encapsulate the legend in a single ```markdown``` block.\n\n"
+            f"Here is the extracted figure content:\n\n{extracted_content}\n"
+        )
+    elif block_type == "Picture":
+        return (
+            "Given the following picture description and any visible text or captions, generate a legend "
+            "with a natural language description of the picture. Encapsulate the legend in a single ```markdown``` block.\n\n"
+            f"Here is the extracted picture content:\n\n{extracted_content}\n"
+        )
+    else:
+        raise ValueError(f"Legend prompt not supported for block type: {block_type}")
+
+def get_user_messages(img_base64, user_prompt, system_prompt=None):
     return [
         {
             "role": "system", 
-            "content": "You are a helpful assistant that extracts a markdown representation from images. Use the ```markdown``` tags to wrap the markdown."
+            "content": "You are a helpful assistant that extracts a markdown representation from images. Use the ```markdown``` tags to wrap the markdown." if not system_prompt else system_prompt
         },
         {
             "role": "user", 
