@@ -4,7 +4,7 @@ import streamlit as st
 
 from src.agent.rag_agent import RAGAgent
 from src.chunker.markdown_section_chunker import MarkdownSectionChunker
-from src.converter.basic_surya_pipeline import BasicSuryaConverter
+from src.converter.basic_surya_pipeline import LayoutAndLLMConverter
 from src.loader.pdf_loader import DirectoryPDFLoader
 from src.vector_store.in_memory import InMemoryVectorStore
 import torch
@@ -25,7 +25,7 @@ if "mode" not in st.session_state:
 if "agent" not in st.session_state:
     st.session_state.agent = RAGAgent(
         loader=DirectoryPDFLoader(DATA_DIR),
-        converter=BasicSuryaConverter(),
+        converter=LayoutAndLLMConverter(),
         chunker=MarkdownSectionChunker(),
         store=InMemoryVectorStore(),
     )
@@ -45,7 +45,7 @@ with st.sidebar:
         if st.button("♻️ Reset index", use_container_width=True):
             st.session_state.agent = RAGAgent(
                 loader=DirectoryPDFLoader(DATA_DIR),
-                converter=BasicSuryaConverter(),
+                converter=LayoutAndLLMConverter(),
                 chunker=MarkdownSectionChunker(),
                 store=InMemoryVectorStore(),
             )
