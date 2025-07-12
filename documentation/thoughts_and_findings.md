@@ -33,7 +33,7 @@ In this first approach, I saw that 21098-ESPS2WROOM-scan.pdf simply had no infor
 
 
 # Second Approach
-The second approach completely replaced the PymuConverter with a MarkerConverter that uses the marker-pdf library - a more sophisticated PDF-to-markdown conversion tool. There were other options we thought about like docling, mineru and unstructured.io. We decided to go with marker since, given that i couldnt find any decent independent benchmarks comparing these options, it was the simplest and most straightforward to control locally (i.e. small models locally, openai integration for high quality OCR with commercial models)
+The second approach completely replaced the PymuConverter with a MarkerConverter that uses the marker-pdf library - a more sophisticated PDF-to-markdown conversion tool. There were other options we thought about like docling, mineru and unstructured.io. Since i couldnt find any decent independent benchmarks comparing these options We decided to go with marker since its own benchmark showed better performance than comparable cloud services like Llamaparse and Mathpix, it was a customizable solution that allowed changing the pipeline, it works with the openai api and it didn't require a GPU to run models locally, and it had specialised approaches and heuristics for tables, equations, footers/headers, etc.
 
 Key Features of MarkerConverter:
 - Advanced PDF Processing: Uses marker-pdf library instead of the simpler PyMuPDF approach
@@ -41,14 +41,22 @@ Key Features of MarkerConverter:
 - Performance Optimization:
   - Caching of converter instances
   - Efficient temporary file handling
-- Image Extraction: Can extract and handle images from PDFs
+- Image Extraction: Can extract and handle images from PDFs and reference them in the markdown
 - Configurable Pipeline: Flexible configuration system with processors and renderers
+
+
+How it works:
+- Extract text, OCR if necessary (heuristics, surya)
+- Detect page layout and find reading order (surya)
+- Clean and format each block (heuristics, texify, surya)
+- Optionally use an LLM to improve quality
+- Combine blocks and postprocess complete text
 
 ## Results
 
 The preliminary results were promising since it got the second and almost the third questions of esp8266_hardware_design_guidelines_en.pdf correctly (the model wrote RES12K, but got the pin number right. see NOTE below*). However, the model broke the openai rate limits when trying to process esp8266-technical_reference_en.pdf.
 
-* **NOTE**: after encountering this error a few times, I went to the original PDF and saw that the ground truth itself was wrong in the initial `README.md`. The model preded "RES12K" correctly 
+* **NOTE**: after encountering this error a few times during the following approaches, I went to the original PDF and saw that the ground truth itself was wrong in the initial `README.md`. The model predicted "RES12K" correctly 
 
 ### `21098-ESPS2WROOM-scan.pdf`
 
@@ -86,7 +94,7 @@ Building a custom pipeline using Surya layout detection + GPT-4o-mini for text e
 5. **Assembly**: Combine extracted text blocks back into complete markdown
 
 **Key Features**:
-- Direct control over the pipeline (no rate limiting issues)
+- Direct control over the pipeline (by using the library backoff we have no more rate limiting issues)
 - Batch processing for layout detection efficiency
 - Pipelined workflow to parallelize layout detection and OpenAI API calls
 - Handles scanned documents through vision models rather than OCR
@@ -110,7 +118,9 @@ If we were not in a technical challenge for a job opening we would have to analy
 
 **Conclusion**: Use batch processing for layout detection, but pipeline the workflow so OpenAI API calls happen in parallel with layout detection of subsequent chunks. 
 
-Note: It was too early for these optimizations using concurrency and parallelization. It is important to improve the speed of parsing the text, but until we have a good enough approach it will be easier to debug the main errors of our parser and iterate on solutions if we have a simple pipeline and use a smaller sample of the pdfs (just extracting a small sample of all the pages) instead of over-working on optimizing the performance. In the end we should add this concurrency/parallelization again.
+Note: These performance optimizations initially made the pipeline faster and improved iteration speed. However, debugging the optimized version proved difficult. As a result, we decided to simplify the process by extracting only the pages containing answers to the test questions—along with their neighboring pages to introduce some noise. This change significantly sped up the overall workflow.
+
+In the future, we can reintroduce the optimization for a smoother production experience. When doing so, we should be mindful of designing the code architecture in a way that supports modular testing—specifically, by isolating key functions from the parallelized code.
 
 ## Results
 
@@ -145,7 +155,7 @@ Note: It was too early for these optimizations using concurrency and paralleliza
 There are a few things that are not working well:
 - The markdown hierarchy is not working. I need to improve the prompt for the model to know if it is a header or normal text
 - some contents like table of contents are not well formated. Again, we should add that context to the prompt
-- I should add the original text layer (that was embedded in the original pdf) to the prompt to help
+- I should add the original text to the prompt to help
 
 
 # Fourth Approach: Improved Prompt
@@ -260,4 +270,5 @@ Possible Next steps:
 - Put back the code that implemented concurrency to the openai api calls and parallelize with the layout detection to speed up the process
 - Evaluate the quality of the markdown by comparing it with the original pdf. overlap of text, overlap of tables, llm-as-a-judge, etc. Just because these tests are passing does not mean the markdown is good. We have to be careful with overfitting to these tests, so we should create a more robust evaluation pipeline.
 - Add a Load/Save Index button to the app so that we dont have to wait for the whole process every time we want to test queries
+
 
