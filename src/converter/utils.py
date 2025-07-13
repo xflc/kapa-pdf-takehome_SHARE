@@ -61,7 +61,7 @@ def get_block_prompt(block_type: str, original_text_context: str | None = None, 
     )
     prompts = {
         "Text": f"Extract only the text from the attached png. Maintain original formatting and line breaks.\nJust output the exact content of the attached image (Use the ```markdown``` tags to wrap the markdown)  and nothing else.",
-        "SectionHeader": f"Extract only the heading text from the attached png.{toc_reference}\nJust output the exact content of the attached image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "SectionHeader": f"Extract the section heading from the attached png always with the appropriate markdown heading '#' level.{toc_reference}\nJust output the exact content of the attached image with the appropriate markdown heading '#' level (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
         "Form": f"Extract only the form text from the attached png. Format as markdown form with proper formatting and indentation.\nJust output the exact content of the attached image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
         "Title": f"Extract only the title text from the attached png. Format as markdown heading (# or ##).\nJust output the exact content of the attached image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
         "ListItem": f"Extract only the list items from the attached png. Format as markdown list with proper formatting and indentation.\nJust output the exact content of the attached image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
