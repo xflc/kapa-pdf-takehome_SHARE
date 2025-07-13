@@ -49,32 +49,35 @@ def scale_crop_image(block, page_image: Image.Image, layout_size) -> Image.Image
     return page_image.crop(block_bbox)
 
 
-def get_block_prompt(block_type: str, original_text_context: str) -> str:
+def get_block_prompt(block_type: str, original_text_context: str | None = None, toc_text: str | None = None) -> str:
     """
-    Get specialized prompt based on block type with original text context.
+    Get specialized prompt based on block type with original text context and optional TOC text.
     """
-    original_text_reference = "" if not original_text_context else f"\n\nHere is the original extracted text of the whole page where the attachment came from, probably with wrong formatting, for you to use as a reference:\n\n{original_text_context}\n\n"
+    original_text_reference = "" if not original_text_context else f"\n\nHere is the original extracted text of the whole pdf page where the attached png came from, probably with wrong formatting, for you to use as a reference, don't use it to generate the text, just use it as a reference if your OCR is unclear:\n\n{original_text_context}\n\n"
+    toc_reference = (
+        "Always use the corresponding markdown heading ('#', or '##', or '###', etc.). e.g., a section called 3.2 should be written as ### 3.2 or ## 3.2, never as # 3.2 or just 3.2\n" 
+        if not toc_text 
+        else f"\n\nFormat this heading as a markdown section heading. If it starts with numbers, use the corresponding level of markdown heading ('3.' -> '##', '2.3' -> '###', or '5.6.6' -> '####', etc.). If there is no number, check the Table of Contents of the document, to help you clarify how many '#' you should use (use '####' if it is not present in the TOC). Things like legends, footnotes, captions, etc. should have no '#' at all, just unformatted text:\n\n{toc_text}\n\n"
+    )
     prompts = {
-        "Text": f"Extract all text. Maintain original formatting and line breaks.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown)  and nothing else.",
-        "SectionHeader": f"Extract the heading text. Format as markdown heading (# or ## or ###).{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "Form": f"Extract the form text. Format as markdown form with proper formatting and indentation.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "Title": f"Extract the title text. Format as markdown heading (# or ##).{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "ListItem": f"Extract list items. Format as markdown list with proper formatting and indentation.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "Table": f"Extract the table. Format as markdown table with proper alignment. Include all rows and columns.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "Figure": f"Describe this figure briefly and extract any visible text or captions.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "Picture": f"Describe this picture briefly and extract any visible text or captions.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "Caption": f"Extract the caption text.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown, but don't use markdown headings like # or ## or ###) and nothing else.",
-        "Footnote": f"Extract the footnote text.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "Formula": f"Extract the mathematical formula. Format in LaTeX if possible.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "PageHeader": f"Extract the page header text with a markdown heading (# or ## or ###) if it contains a chapter/ section header.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "PageFooter": f"Extract the page footer text without any formatting.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "Handwriting": f"Extract the handwritting text. Format as markdown with proper formatting and indentation.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
-        "TableOfContents": f"Extract the table of contents. Format as markdown with proper formatting and indentation.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "Text": f"Extract only the text from the attached png. Maintain original formatting and line breaks.\nJust output the exact content of the attached image (Use the ```markdown``` tags to wrap the markdown)  and nothing else.",
+        "SectionHeader": f"Extract only the heading text from the attached png.{toc_reference}\nJust output the exact content of the attached image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "Form": f"Extract only the form text from the attached png. Format as markdown form with proper formatting and indentation.\nJust output the exact content of the attached image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "Title": f"Extract only the title text from the attached png. Format as markdown heading (# or ##).\nJust output the exact content of the attached image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "ListItem": f"Extract only the list items from the attached png. Format as markdown list with proper formatting and indentation.\nJust output the exact content of the attached image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "Table": f"Extract only the table from the attached png. Format as markdown table with proper alignment. Include all rows and columns.{original_text_reference}\nJust output the exact content of the attached image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "Figure": f"Describe only the figure very briefly.\nJust output the exact content of the attached image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "Picture": f"Describe only the picture briefly and extract any visible text or captions. If it has no technical information, just write the text that is visible in the image if any. If its has no text just write '<IMAGE_ONLY>' and nothing else.\nJust output the exact content of the attached image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "Caption": f"Extract only the caption text.\nJust output the exact content of the attached image (Use the ```markdown``` tags to wrap the markdown, but don't use markdown headings like # or ## or ###) and nothing else.",
+        "Footnote": f"Extract only the footnote text.\nJust output the exact content of the attached image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "Formula": f"Extract only the mathematical formula. Format in LaTeX if possible.\nJust output the exact content of the attached image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "Handwriting": f"Extract only the handwritting text. Format as markdown with proper formatting and indentation.\nJust output the exact content of the attached image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
+        "TableOfContents": f"Extract only the table of contents. Format as markdown with proper formatting and indentation.\nJust output the exact content of the attached image (Use the ```markdown``` tags to wrap the markdown) and nothing else.",
     }
     prompt_out = prompts.get(block_type, None)
     if prompt_out is None:
         print(f"No prompt found for {block_type}")
-        prompt_out = f"Extract all text.{original_text_reference}\nJust output the exact content of the image (Use the ```markdown``` tags to wrap the markdown) and nothing else."
+        prompt_out = f"Extract all text.\nJust output the exact content of the attached image (Use the ```markdown``` tags to wrap the markdown) and nothing else."
     return prompt_out
 
 
