@@ -18,4 +18,3 @@ model = get_registry().get("openai").create(name="text-embedding-3-large")
 class Document(LanceModel):
     text: str = model.SourceField()
     vector: Vector(model.ndims()) = model.VectorField()
-

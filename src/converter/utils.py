@@ -1,14 +1,23 @@
 import base64
 import io
-from PIL import Image
-import openai
-import backoff
 import logging
+
+import backoff
+import openai
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-@backoff.on_exception(backoff.expo, openai.RateLimitError, max_time=60, max_tries=6, logger=logger, jitter=backoff.full_jitter)
+
+@backoff.on_exception(
+    backoff.expo,
+    openai.RateLimitError,
+    max_time=60,
+    max_tries=6,
+    logger=logger,
+    jitter=backoff.full_jitter,
+)
 def completions_with_backoff(client, **kwargs):
     """OpenAI completions with exponential backoff for rate limits"""
     return client.chat.completions.create(**kwargs)
@@ -16,7 +25,7 @@ def completions_with_backoff(client, **kwargs):
 
 def extract_markdown_content(text: str) -> str:
     start_tag = "```markdown"
-    start = text.find(start_tag) 
+    start = text.find(start_tag)
     start = start if start != -1 else text.find("```\nmarkdown")
     if start != -1:
         start += len(start_tag)
@@ -29,6 +38,7 @@ def extract_markdown_content(text: str) -> str:
         markdown_content = text.strip()
     return markdown_content
 
+
 def image_to_base64(image: Image.Image) -> str:
     """
     Convert PIL image to base64 string.
@@ -36,6 +46,7 @@ def image_to_base64(image: Image.Image) -> str:
     buffered = io.BytesIO()
     image.save(buffered, format="PNG")
     return base64.b64encode(buffered.getvalue()).decode()
+
 
 def scale_crop_image(block, page_image: Image.Image, layout_size) -> Image.Image:
     """
@@ -45,22 +56,30 @@ def scale_crop_image(block, page_image: Image.Image, layout_size) -> Image.Image
     scale_x = page_image_size[0] / layout_size[0]
     scale_y = page_image_size[1] / layout_size[1]
     block_bbox = [
-        block.bbox[0] * scale_x, 
-        block.bbox[1] * scale_y, 
-        block.bbox[2] * scale_x, 
-        block.bbox[3] * scale_y
+        block.bbox[0] * scale_x,
+        block.bbox[1] * scale_y,
+        block.bbox[2] * scale_x,
+        block.bbox[3] * scale_y,
     ]
     return page_image.crop(block_bbox)
 
 
-def get_block_prompt(block_type: str, original_text_context: str | None = None, toc_text: str | None = None) -> str:
+def get_block_prompt(
+    block_type: str,
+    original_text_context: str | None = None,
+    toc_text: str | None = None,
+) -> str:
     """
     Get specialized prompt based on block type with original text context and optional TOC text.
     """
-    original_text_reference = "" if not original_text_context else f"\n\nHere is the original extracted text of the whole pdf page where the attached png came from, probably with wrong formatting, for you to use as a reference, don't use it to generate the text, just use it as a reference if your OCR is unclear:\n\n{original_text_context}\n\n"
+    original_text_reference = (
+        ""
+        if not original_text_context
+        else f"\n\nHere is the original extracted text of the whole pdf page where the attached png came from, probably with wrong formatting, for you to use as a reference, don't use it to generate the text, just use it as a reference if your OCR is unclear:\n\n{original_text_context}\n\n"
+    )
     toc_reference = (
-        "Always use the corresponding markdown heading ('#', or '##', or '###', etc.). e.g., a section called 3.2 should be written as ### 3.2 or ## 3.2, never as # 3.2 or just 3.2\n" 
-        if not toc_text 
+        "Always use the corresponding markdown heading ('#', or '##', or '###', etc.). e.g., a section called 3.2 should be written as ### 3.2 or ## 3.2, never as # 3.2 or just 3.2\n"
+        if not toc_text
         else f"\n\nFormat this heading as a markdown section heading. If it starts with numbers, use the corresponding level of markdown heading ('3.' -> '##', '2.3' -> '###', or '5.6.6' -> '####', etc.). If there is no number, check the Table of Contents of the document, to help you clarify how many '#' you should use (use '####' if it is not present in the TOC). Things like legends, footnotes, captions, etc. should have no '#' at all, just unformatted text:\n\n{toc_text}\n\n"
     )
     prompts = {
@@ -112,22 +131,25 @@ def get_legend_prompt(block_type: str, extracted_content: str) -> str:
     else:
         raise ValueError(f"Legend prompt not supported for block type: {block_type}")
 
+
 def get_user_messages(img_base64, user_prompt, system_prompt=None):
     return [
         {
-            "role": "system", 
-            "content": "You are a helpful assistant that extracts a markdown representation from images. Use the ```markdown``` tags to wrap the markdown." if not system_prompt else system_prompt
+            "role": "system",
+            "content": (
+                "You are a helpful assistant that extracts a markdown representation from images. Use the ```markdown``` tags to wrap the markdown."
+                if not system_prompt
+                else system_prompt
+            ),
         },
         {
-            "role": "user", 
+            "role": "user",
             "content": [
                 {"type": "text", "text": user_prompt},
                 {
                     "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/png;base64,{img_base64}"
-                    }
-                }
-            ]
-        }
+                    "image_url": {"url": f"data:image/png;base64,{img_base64}"},
+                },
+            ],
+        },
     ]
