@@ -3,8 +3,12 @@ import io
 from PIL import Image
 import openai
 import backoff
+import logging
 
-@backoff.on_exception(backoff.expo, openai.RateLimitError, max_time=60, max_tries=6)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+@backoff.on_exception(backoff.expo, openai.RateLimitError, max_time=60, max_tries=6, logger=logger, jitter=backoff.full_jitter)
 def completions_with_backoff(client, **kwargs):
     """OpenAI completions with exponential backoff for rate limits"""
     return client.chat.completions.create(**kwargs)

@@ -11,7 +11,7 @@ class BaseChunker:
 
     def __init__(
         self,
-        max_chunk_size: int = 2000,
+        max_chunk_size: int = 5000,
     ):
         self.max_chunk_size = max_chunk_size
 

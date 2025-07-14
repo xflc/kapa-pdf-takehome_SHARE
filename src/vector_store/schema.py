@@ -12,9 +12,10 @@ from __future__ import annotations
 from lancedb.embeddings import get_registry
 from lancedb.pydantic import LanceModel, Vector
 
-model = get_registry().get("openai").create(name="text-embedding-3-small")
+model = get_registry().get("openai").create(name="text-embedding-3-large")
 
 
 class Document(LanceModel):
     text: str = model.SourceField()
     vector: Vector(model.ndims()) = model.VectorField()
+

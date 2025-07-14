@@ -36,7 +36,7 @@ class LayoutAndLLMConverter(PDFtoMarkdown):
     Basic converter using Surya layout detection + gpt-4.1-mini text extraction.
     """
     
-    def __init__(self, max_chars: int = 2000, num_workers: int = 25):
+    def __init__(self, max_chars: int = 5000, num_workers: int = 25):
         """Initialize the converter."""
         self.client = OpenAI()
         self.max_chars = max_chars
@@ -58,7 +58,7 @@ class LayoutAndLLMConverter(PDFtoMarkdown):
         images, original_text_contexts = self._pdf_preprocessing(pdf_path)
         
         # Scale images by 1.1x before layout detection
-        scaled_images = [img.resize((int(img.width * 1.1), int(img.height * 1.1)), Image.Resampling.LANCZOS) for img in images]
+        scaled_images = [img.resize((int(img.width * 0.9), int(img.height * 0.9)), Image.Resampling.LANCZOS) for img in images]
         
         # Run layout detection on all images
         layout_results = layout_predictor(scaled_images)
@@ -217,7 +217,7 @@ class LayoutAndLLMConverter(PDFtoMarkdown):
             client=self.client,
             model="gpt-4.1-mini",
             messages=get_user_messages(img_base64, user_prompt),
-            temperature=0
+            temperature=0.2
         )
         block_text = response.choices[0].message.content
         main_content = extract_markdown_content(block_text) if block_text else ""
@@ -229,13 +229,13 @@ class LayoutAndLLMConverter(PDFtoMarkdown):
                 client=self.client,
                 model="gpt-4.1-mini",
                 messages=get_user_messages(img_base64, legend_prompt, system_prompt="You are a helpful assistant that generates a readable representation of a table"),
-                temperature=0
+                temperature=0.2
             )
             legend_text = legend_response.choices[0].message.content
             legend_content = extract_markdown_content(legend_text) if legend_text else ""
             # If the combined length exceeds max_chars, return only legend_content
             if legend_content and len(main_content) + len(legend_content) > self.max_chars:
-                return "\n\n" + legend_content + "\n\n" if len(legend_content) < self.max_chars else "\n\n" + main_content + "\n\n"
+                return "\n\n" + legend_content + "\n\n" if len(legend_content) < self.max_chars or len(main_content) > self.max_chars else "\n\n" + main_content + "\n\n"
             # Otherwise, append legend to main content, separated by two newlines
             return f"\n\n{main_content}\n\n{legend_content}\n\n" if legend_content else main_content
         else:
