@@ -272,3 +272,72 @@ Possible Next steps:
 - Add a Load/Save Index button to the app so that we dont have to wait for the whole process every time we want to test queries
 
 
+# Sixth Approach: Tackling Flakiness and Real-World Robustness
+
+## Motivation and Initial Experimentation
+
+1. After running the full PDFs through the pipeline—rather than just sampled pages as in previous approaches—we discovered significant flakiness in the results. The retrieval of relevant chunks, and thus the answers to our test questions, varied greatly between runs. In other words, the outcome was highly sensitive to the random seed and other sources of nondeterminism: sometimes the model would fail catastrophically on multiple questions, even though our very first run yielded a perfect score (a result we were never able to reproduce). This means that the test results from Approaches 4 and 5, which used only a sample of the PDFs for each test, were overly optimistic and did not reflect the true variability and instability of the system.
+
+2. A major motivation for this new approach was observing that the output from gpt-4.1-mini was often excessively verbose. For example, we initially provided the original text layer to every block type to help with OCR errors. However, this led the model to generate much longer outputs and increased the frequency of hallucinations, especially in cases where the OCR layer contained errors. We noticed this most acutely in large tables with very similar strings (e.g., "EFM8BB31F32G-D-QFP32" vs. "EFM8BB31F32G-D-QFN32"), where the model would sometimes repeat or conflate entries.
+
+3. Another issue arose with the representation of tables. By including the markdown table, a legend, and a natural language description for every row, we ended up with an explosion of chunks. The natural language lines were often very similar to each other, which likely resulted in highly similar embeddings. This made retrieval unstable, as the right chunk was less likely to consistently appear in the top results.
+
+4. Section headings also proved problematic. They are crucial for chunking, but gpt-4.1-mini lacked the context to reliably determine the correct number of '#' symbols for each heading. The model frequently omitted the appropriate markdown heading, leading to inconsistent document structure. To address this, we started injecting the PDF’s table of contents into the prompt for each section heading, giving the model the necessary context to infer the correct hierarchy.
+
+5. Finally, we found that when section heading prediction failed, the page header often contained valuable information about the page’s topic. For example, the answer to the "maximum storage temperature" question was frequently missed because the relevant chunk did not mention "EFM8BB3," even though it was present in the page header. To mitigate this, we decided to prepend the page header to every section header. While this can introduce some repetition when the hierarchy is working well, it provides crucial context in cases where heading prediction fails—which can happen for a variety of reasons. A different idea we had that will be left for next steps would be to let the model analyze the TOC and a few pages to evaluate if a specific's pdf's page headers contained useful information to include in the sections' headings or not.
+
+Section TLDR: we found problems with the model's ability to understand the table structure, the section headings, and the document context for each chunk. We also found that the model was often excessively verbose, which led to hallucinations and instability in the results.
+
+## Decisions and Results
+
+Throughout this process, I continuously refined prompts, information flows, and the way different content types were curated in the final markdown, all in an effort to address persistent instability in the results. Every attempt to resolve one category of errors—such as helping the model recognize that a row labeled `Storage Temperature` and a column labeled `max` together indicate "Maximum Storage Temperature"—often gave rise to new problems. For instance, generating natural language descriptions for table rows to aid the embedding model resulted in a surge of tokens, quickly reaching the max_token_size limit. Even after reducing the detail in these representations, the outcome was many nearly identical rows and chunks, leading to similar embeddings and making it unlikely that the correct answer would consistently appear among the top 3 retrieved chunks.
+
+After considerable effort to perfect the test set, it became clear that optimizing for these tests risked overfitting our solution to the test set, falling into Goodhart’s Law: "When a measure becomes a target, it ceases to be a good measure." The results remained highly sensitive to random seeds and other sources of nondeterminism, and the system was fundamentally limited by embedding model size, chunk size, and retrieval settings. Given the constraints of the take-home challenge, I now believe that a robust solution wasn’t possible without changing these parameters.
+
+Therefore, to improve consistency—especially for table-heavy technical PDFs—I increased the retrieval top_k to 10 and used a larger embedding model. While this helped it is still unstable, and it also highlighted the system’s limitations. At minimum, a more capable embedding model, larger chunk sizes, and a higher top_k are essential.
+
+Beyond that, advanced RAG methods—like storing provenance metadata, enriching chunks with contextual summaries, table-aware chunking, and context window retrieval (including neighboring chunks)—are essential for robust performance. Converter improvements alone can’t address the core retrieval and grounding limitations.
+
+Section TLDR: 
+- Many approaches were tried, but the results were still unstable. So I concluded that the whole RAG should be tweaked.
+- I increased the retrieval top_k to 10 and used a larger embedding model. While this helped it is still unstable, and it also highlighted the system’s limitations.
+
+
+### `21098-ESPS2WROOM-scan.pdf`
+
+| Status | Question | Correct answer (information only) | Page |
+|--------|----------|-----------------------------------|------|
+| ✓ Works | What type of equipment is **B20111311**? | Modular Approval, Wi-Fi Device | — |
+| ✓ Works | When was the certificate for **US0057** issued? | 2020-11-19 | — |
+| ✓ Works | Who holds the **21098-ESPS2WROOM** certificate? | ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD. | — |
+
+### `esp8266_hardware_design_guidelines_en.pdf`
+
+| Status | Question | Correct answer (information only) | Page |
+|--------|----------|-----------------------------------|------|
+| ✓ Works | Can **ESP8266EX** be applied to any micro-controller design as a Wi-Fi adaptor? | Yes; via SPI/SDIO or I2C/UART interfaces | 6 |
+| ✓ Works | What is the **frequency range** for ESP8266EX? | 2.4 G – 2.5 G (2400 M – 2483.5 M) | 7 |
+| ✓ Works | To what pin do I connect the **resistor** for ESP8266EX? | Pin ERS12K (31) | 15 |
+
+### `esp8266-technical_reference_en.pdf`
+
+| Status | Question | Correct answer (information only) | Page |
+|--------|----------|-----------------------------------|------|
+| ✓ Works | What’s the **flash memory** of EFM8BB31F32G-D-QFP32? | 32 kB | 4 |
+| ✓ Works | What is the **maximum storage temperature** for EFM8BB3? | 150 °C | 40 |
+| ✓ Works | How many **multi-function I/O pins** does EFM8BB3 have? | Up to 29 | 10 |
+| ✓ Works | What is the **minimum Voltage Reference Range for DACs**? | 1.15 V | 31 |
+| ✓ Works | What are the different **power modes** for EFM8BB3? | Normal, Idle, Suspend, Stop, Snooze, Shutdown | 10 |
+
+
+## Extra findings, decisions, and future steps
+
+- Legends for figures and pictures were found to add little value for this use case, but a similar approach of writing a natural language description of visual elements is a must for a production ready approach. (Some visual elements in these test pdfs already contain technical information, but we didn't implement it yet given the types of questions in the test set. But the prompts are already written).
+- Section heading prediction remains a challenge; injecting the TOC and page headers helps, but a more robust solution may require a post-processing LLM pass to unify and correct markdown hierarchy.
+- The system is still sensitive to random seed and other sources of nondeterminism; further work is needed to improve determinism and robustness for real-world use.
+- "TableOfContents" blocks are skipped in the output to avoid redundancy, as their main value is in providing context for heading hierarchy. Table of contents is a good example of top_3 being too little, because there is a considerable possibility of a keyword match with something in the TOC. Still, it is useful contextually for things like the level of the header: The Table of Contents is extracted and injected into section heading prompts for better hierarchy inference.
+- Consecutive "ListItem" blocks are now merged to improve list coherence, though this may occasionally combine items that should remain separate.
+- I ended up parallelizing just the OCR to the blocks within each page. It sped up the process considerably, but the full concurrent approach of layout detection and OCR in parallel should be the optimal one.
+- After visually analyzing the layout blocks extracted for each pdf, the 4th page of `efm8bb3-datasheet.pdf` started yielding weird boxes. It was very strange and I intuited that there was some hidden weird artifact in the image that was messing the model. So, I simply tried to scale the Images by 1.1x before passing through the layout detection and it fixed the problem. This suggests that a general solution should be tried regarding the correct scaling of the images to pass through the model.
+
+

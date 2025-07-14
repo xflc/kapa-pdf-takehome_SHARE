@@ -9,18 +9,18 @@ In-memory LanceDB hybrid store
 
 from __future__ import annotations
 
+import logging
 import os
 import uuid
 from typing import List, Tuple
-import backoff
-import logging
 
+import backoff
 import lancedb
 import pandas as pd
 
 from .schema import Document
 
-TOP_K = int(os.getenv("TOP_K", "3"))
+TOP_K = int(os.getenv("TOP_K", "10"))
 logger = logging.getLogger(__name__)
 
 
@@ -41,7 +41,7 @@ class InMemoryVectorStore:
             schema=Document,
             mode="overwrite",
         )
-        
+
         # Create FTS index with error handling
         try:
             self._table.create_fts_index("text", replace=True)
@@ -53,7 +53,7 @@ class InMemoryVectorStore:
             except Exception as e2:
                 logger.warning(f"Failed to create FTS index without replace: {e2}")
                 # Continue without FTS index - the table will still work but without full-text search
-        
+
         self.texts: List[str] = []
 
     def add_texts(self, texts: List[str]) -> None:
